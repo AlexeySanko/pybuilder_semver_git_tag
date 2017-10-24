@@ -17,8 +17,10 @@
 """
     Plugin which provides dynamic project version based on SemVer git tag
 """
+import git
 from pybuilder.core import before, init, use_plugin
 from pybuilder.errors import BuildFailedException
+import semver
 
 
 __author__ = 'Alexey Sanko'
@@ -58,7 +60,6 @@ def _get_repo_info(path):
     :param path:
     :return: (list of TagInfo, last commit for head, is_dirty flag)
     """
-    import git
     try:
         repo = git.Repo(path)
     except (git.InvalidGitRepositoryError, git.NoSuchPathError):
@@ -66,7 +67,7 @@ def _get_repo_info(path):
                                    % path)
     result_tags = []
     for tag in repo.tags:
-        result_tags.append([_TagInfo(tag.name, tag.commit)])
+        result_tags.append(_TagInfo(tag.name, tag.commit))
     return (result_tags,
             list(repo.iter_commits(repo.head, max_count=1))[0],
             repo.is_dirty())
@@ -76,10 +77,11 @@ def _get_repo_info(path):
 def version_from_git_tag(project, logger):
     """ Set project version according git tags"""
     # get git info
-    tags, last_commit, repo_is_dirty = _get_repo_info(project.get_property(
-        'semver_git_tag_repo_dir', default_value=project.basedir))
+    tags, last_commit, repo_is_dirty = _get_repo_info(
+        project.get_property('semver_git_tag_repo_dir')
+        if project.get_property('semver_git_tag_repo_dir')
+        else project.basedir)
     # get last tag which satisfies SemVer
-    import semver
     last_semver_tag = None
     semver_regex = semver._REGEX    # pylint: disable=protected-access
     for tag in reversed(tags):
@@ -114,4 +116,5 @@ def version_from_git_tag(project, logger):
     # - it's release tag
     else:
         project.version = last_semver_tag.name
-    logger.info("Project version was changed to: %s" % project.version)
+    logger.info("Project version was changed to: %s, dist_version: %s"
+                % (project.version, project.dist_version))

@@ -8,6 +8,7 @@ use_plugin("python.pylint")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 use_plugin("python.unittest")
+use_plugin("pypi:pybuilder_semver_git_tag")
 
 
 name = "pybuilder_semver_git_tag"
@@ -25,8 +26,11 @@ default_task = ['clean', 'analyze', 'publish']
 def set_properties(project):
     # dependencies
     project.build_depends_on('mock')
-    project.build_depends_on('GitPython')
-    project.build_depends_on('semver')
+    project.depends_on('GitPython')
+    project.depends_on('semver')
+
+    # coverage
+    project.set_property("coverage_reset_modules", True)
 
     # flake8
     project.set_property('flake8_verbose_output', True)
