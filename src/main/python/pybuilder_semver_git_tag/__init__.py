@@ -19,6 +19,7 @@
 """
 import git
 from pybuilder.core import before, init, use_plugin
+from pybuilder.plugins.python.core_plugin import DISTRIBUTION_PROPERTY
 from pybuilder.errors import BuildFailedException
 import semver
 
@@ -116,5 +117,10 @@ def version_from_git_tag(project, logger):
     # - it's release tag
     else:
         project.version = last_semver_tag.name
-    logger.info("Project version was changed to: %s, dist_version: %s"
-                % (project.version, project.dist_version))
+    # DISTRIBUTION_PROPERTY is also be affected
+    project.set_property(DISTRIBUTION_PROPERTY,
+                         "$dir_target/dist/{0}-{1}".format(
+                             project.name, project.version))
+    logger.info("Project version was changed to: %s, dist_version: %s, %s: %s"
+                % (project.version, project.dist_version, DISTRIBUTION_PROPERTY,
+                   project.get_property(DISTRIBUTION_PROPERTY)))

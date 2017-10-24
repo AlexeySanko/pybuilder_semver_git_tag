@@ -1,4 +1,9 @@
-from pybuilder.core import Author, use_plugin, init
+import sys
+from pybuilder.core import Author, before, use_plugin, init
+
+# Eating your own dog food
+# This is only necessary for bootstrap
+sys.path.insert(0, 'src/main/python')
 
 use_plugin("python.core")
 use_plugin("python.install_dependencies")
@@ -8,11 +13,9 @@ use_plugin("python.pylint")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 use_plugin("python.unittest")
-use_plugin("pypi:pybuilder_semver_git_tag")
 
 
 name = "pybuilder_semver_git_tag"
-version = '1.0.0'
 authors = [Author('Alexey Sanko', 'alexeycount@gmail.com')]
 url = 'https://github.com/AlexeySanko/pybuilder_semver_git_tag'
 description = 'Please visit {0} for more information!'.format(url)
@@ -23,7 +26,7 @@ default_task = ['clean', 'analyze', 'publish']
 
 
 @init
-def set_properties(project):
+def set_properties(project, logger):
     # dependencies
     project.build_depends_on('mock')
     project.depends_on('GitPython')
@@ -60,3 +63,11 @@ def set_properties(project):
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ])
+
+
+@before("prepare", only_once=True)
+def version_from_git_tag(project, logger):
+    # Eating your own dog food
+    import pybuilder_semver_git_tag
+    pybuilder_semver_git_tag.initialize_semver_git_tag(project)
+    pybuilder_semver_git_tag.version_from_git_tag(project, logger)
