@@ -25,6 +25,8 @@ default_task = ['clean', 'analyze', 'publish']
 def set_properties(project):
     # dependencies
     project.build_depends_on('mock')
+    project.build_depends_on('GitPython')
+    project.build_depends_on('semver')
 
     # flake8
     project.set_property('flake8_verbose_output', True)
