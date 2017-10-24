@@ -14,6 +14,6 @@ branches:
   - master
 install:
   - pip install pybuilder
-  - pyb install_dependencies --verbose
+  - pyb install_dependencies --debug
 script:
   - pyb --debug
