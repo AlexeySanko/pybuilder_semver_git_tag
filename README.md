@@ -33,4 +33,4 @@ Plugin has next properties with provided defaults
 | Name | Type | Default Value | Description |
 | --- | --- | --- | --- |
 | semver_git_tag_increment_part | string | patch | Part for develop version increment - `major`, `minor` or `patch` (SemVer version: `major.minor.patch`) |
-| semver_git_tag_repo_dir | string | None | Git repository directory full path. If None` directory` with` build.py` file will be used |
+| semver_git_tag_repo_dir | string | None | Git repository directory full path. If `None` directory with` build.py` file will be used |
