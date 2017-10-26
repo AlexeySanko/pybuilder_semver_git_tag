@@ -30,13 +30,7 @@ Properties
 
 Plugin has next properties with provided defaults
 
-```python
-@init
-def set_properties(project, logger):
-    # Part for develop version increment - 'major', 'minor' or 'patch'
-    # Default: 'patch'
-    project.set_property('semver_git_tag_increment_part', ...)
-    # Git repository directory path. If None parent directory for build.py will be used
-    # Default: None
-    project.set_property('semver_git_tag_repo_dir', ...)
-```
+| Name | Type | Default Value | Description |
+| --- | --- | --- | --- |
+| semver_git_tag_increment_part | string | patch | Part for develop version increment - 'major', 'minor' or 'patch' |
+| semver_git_tag_repo_dir | string | None | Git repository directory full path. If None parent directory for build.py will be used |
