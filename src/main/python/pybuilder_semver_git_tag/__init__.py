@@ -88,8 +88,10 @@ def version_from_git_tag(project, logger):
     for tag in reversed(tags):
         match = semver_regex.match(tag.name)
         if match:
-            last_semver_tag = tag
-            break
+            if ((not last_semver_tag) or
+                    (semver.compare(tag.name, last_semver_tag.name) == 1)):
+                last_semver_tag = tag
+                break
     if not last_semver_tag:
         logger.warn(
             "No SemVer git tag found. "
@@ -101,6 +103,14 @@ def version_from_git_tag(project, logger):
     # if dirty or last commit isn't equal last tag commit
     # - increase version and add .dev
     if last_commit != last_semver_tag.commit or repo_is_dirty:
+        if repo_is_dirty:
+            logger.debug("Repo is marked as dirty - dev version.")
+        else:
+            logger.debug("Last tag %s has commit %s, "
+                         "but last commit is %s - dev version."
+                         % (last_semver_tag.name,
+                            last_semver_tag.commit.hexsha,
+                            last_commit.hexsha))
         increase_part = project.get_property('semver_git_tag_increment_part')
         if increase_part == 'major':
             project.version = _add_dev(semver.bump_major(last_semver_tag.name))
