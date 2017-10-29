@@ -85,13 +85,16 @@ def version_from_git_tag(project, logger):
     # get last tag which satisfies SemVer
     last_semver_tag = None
     semver_regex = semver._REGEX    # pylint: disable=protected-access
+    tag_list = []
+    for tag in reversed(tags):
+        tag_list.append(tag.name)
+    logger.debug("All git tags: %s." % ','.join(tag_list))
     for tag in reversed(tags):
         match = semver_regex.match(tag.name)
         if match:
             if ((not last_semver_tag) or
                     (semver.compare(tag.name, last_semver_tag.name) == 1)):
                 last_semver_tag = tag
-                break
     if not last_semver_tag:
         logger.warn(
             "No SemVer git tag found. "
@@ -104,13 +107,13 @@ def version_from_git_tag(project, logger):
     # - increase version and add .dev
     if last_commit != last_semver_tag.commit or repo_is_dirty:
         if repo_is_dirty:
-            logger.debug("Repo is marked as dirty - dev version.")
+            logger.debug("Repo is marked as dirty - use dev version.")
         else:
             logger.debug("Last tag %s has commit %s, "
-                         "but last commit is %s - dev version."
+                         "but last commit is %s - use dev version."
                          % (last_semver_tag.name,
-                            last_semver_tag.commit.hexsha,
-                            last_commit.hexsha))
+                            str(last_semver_tag.commit),
+                            str(last_commit)))
         increase_part = project.get_property('semver_git_tag_increment_part')
         if increase_part == 'major':
             project.version = _add_dev(semver.bump_major(last_semver_tag.name))

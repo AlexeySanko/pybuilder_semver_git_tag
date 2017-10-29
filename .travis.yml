@@ -3,10 +3,11 @@ language: python
 python:
 - '2.7'
 - '3.4'
+- '3.5'
 - '3.6'
-branches:
-  except:
-  - master
+- '3.7-dev'
+- 'pypy'
+- 'pypy3'
 install:
   - pip install pybuilder
   - pyb install_dependencies --verbose
@@ -17,21 +18,19 @@ deploy:
     user: AlexeySanko
     server: https://upload.pypi.org/legacy/
     password:
-      secure: oeXNa1Nc9mJL7mhSIXV1VBp9qjQE/kZuyVeMDid03UDfVcLMThy+TN/Ccy9ami0YPOFetoUS+WlptFmoHaX4fFKhcuU4Bow58Gah+z0SMXh7QViNvlZTjSt6UhY8l/HlQNehtGyv0jjalHSFazZi0bfhgwJLoAZvl7ouFK/mezD/OTh/uxLGVd8FYlhKYIjAao1q6s2+c/XNIUlNgDISPblz5ZPhTDaJzd2i0dRm7flhS/PghDyBTiInDKGwhucQAXCvZQDBFvkC84quaThKBw+QI1jrC6nFnFYV06HKKQbji++uMXVuwf9/NcTDvxNFGOJq/LD9Alm/zGxLbDTctRwNgxDCP9CvawBVxpEF5z1EwwO99bRBKweP41xyCT2Nid9PAukY8D8zJ2t+SLL3eUKpjUPWeM7SveYafa+C6jldEDM3StUZeUN/3cRz3zSN6PMehSA60M3SrhTmMS+ZVudQIzvCL5MxfuhvZYmVdYpN8DAnWOgs+hHOaHn1GP/C1tcrI3Cm4bvVdCubSqcpCDmQJsi8SQiZz3L5aIqksIIaJ9KxAgH/qm5R4JhkVi8TXQI0yBeSzxvtB7IMIsXlxI9ZlAqx4lEegSEhBpUx5nomSncpCEDB1hrC4QpSOdpo4UxvxfEYQjwgrejHy/o8mdAERs54iiEuRriH8Pdhm/w=
+      secure: ZBaWKmMPFunOezh9sLOrASavx9aal2pETwgfym5oRHUkGLqRZYF0HvT2pE38J5KNOReuC1CmP4mlmPqUNYsQ/taVFlFvi/VhO7HcRJI610QKcNl/bavjIPI7JHuydwtvNKUT/iCynKDmJs3Ir5DAcvOlaHVAX3E5HOHiwXpGbf/QFp4R5mR20x44fBjpdQbRc/osGc30sxEOaKoM7EqGEeMGCYgop7oUg7lltcWz9QfDm+OH4KAh87olWsPEpyRXUBQlSpceAUqnKSO3SeqtaKaNNpK0b76In/lPZGYcGNWUk+oz7kdm0NySupM7wlQGEdBnQeh4Igg02N+JGzd4NVerldbYjPXvHI8l066gagWPdaaqjarIXqeReyKMWdBFX7TTyK/3xTnhUBm9QwQzENY4gr+ICgbEmnJpzYCwjFUxodx9qfLRfHyyZ+j25dGOE7gTsFWqfWimCqGV3s51lIQP+Hly7M6+wXw07jderjEojtQmWQ84vkjzi4wBQLtpL5S0Fpt8suV//4qBIK+kFAkt8u2yQYdCq9j8SSe8FDenr+85F7hRMh4DjdU8bkQSxCRBaOAPFKBimwGJi2MXbtI1MS5vhi7lHFr8HkLX3SNsZDBtW2pBiw+CwiuSgmOzBI0ZKY9yF6MabRe46P6LOkRi3qJMQJ7Gsx3z9t4Uu/o=
     on:
       tags: true
-      all_branches: true
       python: '2.7'
-      repo: AlexeySanko/pybuilder_pypi_server
+      repo: AlexeySanko/pybuilder_semver_git_tag
     distributions: bdist_wheel
   - provider: pypi
     user: AlexeySanko
     server: https://upload.pypi.org/legacy/
     password:
-      secure: oeXNa1Nc9mJL7mhSIXV1VBp9qjQE/kZuyVeMDid03UDfVcLMThy+TN/Ccy9ami0YPOFetoUS+WlptFmoHaX4fFKhcuU4Bow58Gah+z0SMXh7QViNvlZTjSt6UhY8l/HlQNehtGyv0jjalHSFazZi0bfhgwJLoAZvl7ouFK/mezD/OTh/uxLGVd8FYlhKYIjAao1q6s2+c/XNIUlNgDISPblz5ZPhTDaJzd2i0dRm7flhS/PghDyBTiInDKGwhucQAXCvZQDBFvkC84quaThKBw+QI1jrC6nFnFYV06HKKQbji++uMXVuwf9/NcTDvxNFGOJq/LD9Alm/zGxLbDTctRwNgxDCP9CvawBVxpEF5z1EwwO99bRBKweP41xyCT2Nid9PAukY8D8zJ2t+SLL3eUKpjUPWeM7SveYafa+C6jldEDM3StUZeUN/3cRz3zSN6PMehSA60M3SrhTmMS+ZVudQIzvCL5MxfuhvZYmVdYpN8DAnWOgs+hHOaHn1GP/C1tcrI3Cm4bvVdCubSqcpCDmQJsi8SQiZz3L5aIqksIIaJ9KxAgH/qm5R4JhkVi8TXQI0yBeSzxvtB7IMIsXlxI9ZlAqx4lEegSEhBpUx5nomSncpCEDB1hrC4QpSOdpo4UxvxfEYQjwgrejHy/o8mdAERs54iiEuRriH8Pdhm/w=
+      secure: ZBaWKmMPFunOezh9sLOrASavx9aal2pETwgfym5oRHUkGLqRZYF0HvT2pE38J5KNOReuC1CmP4mlmPqUNYsQ/taVFlFvi/VhO7HcRJI610QKcNl/bavjIPI7JHuydwtvNKUT/iCynKDmJs3Ir5DAcvOlaHVAX3E5HOHiwXpGbf/QFp4R5mR20x44fBjpdQbRc/osGc30sxEOaKoM7EqGEeMGCYgop7oUg7lltcWz9QfDm+OH4KAh87olWsPEpyRXUBQlSpceAUqnKSO3SeqtaKaNNpK0b76In/lPZGYcGNWUk+oz7kdm0NySupM7wlQGEdBnQeh4Igg02N+JGzd4NVerldbYjPXvHI8l066gagWPdaaqjarIXqeReyKMWdBFX7TTyK/3xTnhUBm9QwQzENY4gr+ICgbEmnJpzYCwjFUxodx9qfLRfHyyZ+j25dGOE7gTsFWqfWimCqGV3s51lIQP+Hly7M6+wXw07jderjEojtQmWQ84vkjzi4wBQLtpL5S0Fpt8suV//4qBIK+kFAkt8u2yQYdCq9j8SSe8FDenr+85F7hRMh4DjdU8bkQSxCRBaOAPFKBimwGJi2MXbtI1MS5vhi7lHFr8HkLX3SNsZDBtW2pBiw+CwiuSgmOzBI0ZKY9yF6MabRe46P6LOkRi3qJMQJ7Gsx3z9t4Uu/o=
     on:
       tags: true
-      all_branches: true
       python: '3.6'
-      repo: AlexeySanko/pybuilder_pypi_server
+      repo: AlexeySanko/pybuilder_semver_git_tag
     distributions: bdist_wheel
