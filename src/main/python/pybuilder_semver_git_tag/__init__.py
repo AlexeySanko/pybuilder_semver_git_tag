@@ -124,7 +124,7 @@ def version_from_git_tag(project, logger):
         else:
             raise BuildFailedException(
                 "Incorrect value for `semver_git_tag_increment_part` property. "
-                "Has to be in (`major`, `minor`, `patch`), but %s passed."
+                "Has to be in (`major`, `minor`, `patch`), but `%s` passed."
                 % project.get_property('semver_git_tag_increment_part'))
     # if not dirty and last commit is equal last tag commit
     # - it's release tag

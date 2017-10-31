@@ -142,6 +142,11 @@ class VersionFromGitTests(TestCase):
         # Test incorrect part
         logger_mock = Mock()
         self.project.set_property('semver_git_tag_increment_part', 'incorrect')
-        self.assertRaises(BuildFailedException, version_from_git_tag,
-                          self.project, logger_mock)
+        with self.assertRaises(BuildFailedException) as context:
+            version_from_git_tag(self.project, logger_mock)
+        err_msg = str(context.exception)
+        self.assertTrue(
+            ("Incorrect value for `semver_git_tag_increment_part` property. "
+             "Has to be in (`major`, `minor`, `patch`), "
+             "but `incorrect` passed.") in err_msg)
         logger_mock.info.assert_called_once()
