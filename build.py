@@ -13,6 +13,7 @@ use_plugin("python.pylint")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 use_plugin("python.unittest")
+use_plugin("pypi:pybuilder_pylint_extended")
 
 
 name = "pybuilder_semver_git_tag"
@@ -70,4 +71,5 @@ def version_from_git_tag(project, logger):
     # Eating your own dog food
     import pybuilder_semver_git_tag
     pybuilder_semver_git_tag.initialize_semver_git_tag(project)
+    project.set_property('semver_git_tag_changelog', 'CHANGELOG.md')
     pybuilder_semver_git_tag.version_from_git_tag(project, logger)

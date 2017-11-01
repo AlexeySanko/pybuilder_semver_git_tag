@@ -39,6 +39,12 @@ def initialize_semver_git_tag(project):
     # Git repository directory path.
     # If None parent directory for build.py will be used
     project.set_property_if_unset('semver_git_tag_repo_dir', None)
+    # Relative path with name of changelog file.
+    # If not None for release tag plugin will check
+    # that changelog was changed since previous tag release
+    project.set_property_if_unset('semver_git_tag_changelog', None)
+    # Specific prefix of release tags. For example, 'v' for 'v1.2.3' tag
+    project.set_property_if_unset('semver_git_tag_version_prefix', '')
 
 
 def _add_dev(version):
@@ -46,12 +52,31 @@ def _add_dev(version):
 
 
 class _TagInfo(object):     # pylint: disable=too-few-public-methods
-    def __init__(self, name, commit):
+    def __init__(self, name, commit, version_prefix):
         self.name = name
         self.commit = commit
+        self._version_prefix = version_prefix
+
+    @property
+    def short(self):
+        """ Return short form of tag name - without version prefix"""
+        if self._version_prefix:
+            if str(self.name).startswith(self._version_prefix):
+                return str(self.name).replace(self._version_prefix, '', 1)
+            return ''
+        return self.name
 
 
-def _get_repo_info(path):
+def _get_repo(path):
+    try:
+        repo = git.Repo(path)
+    except (git.InvalidGitRepositoryError, git.NoSuchPathError):
+        raise BuildFailedException("Directory `%s` isn't git repository root."
+                                   % path)
+    return repo
+
+
+def _get_repo_info(path, version_prefix):
     """
     Collect information about Git repository
 
@@ -61,40 +86,74 @@ def _get_repo_info(path):
     :param path:
     :return: (list of TagInfo, last commit for head, is_dirty flag)
     """
-    try:
-        repo = git.Repo(path)
-    except (git.InvalidGitRepositoryError, git.NoSuchPathError):
-        raise BuildFailedException("Directory `%s` isn't git repository root."
-                                   % path)
+    repo = _get_repo(path)
     result_tags = []
     for tag in repo.tags:
-        result_tags.append(_TagInfo(tag.name, tag.commit))
+        result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
     return (result_tags,
             list(repo.iter_commits(repo.head, max_count=1))[0],
             repo.is_dirty())
+
+
+def _seek_last_semver_tag(tags, excluded_short=''):
+    """
+    Seek last SemVer version from tags
+    :param tags: list of _TagInfo
+    :param version_prefix: prefix into version tag
+    :param excluded_short: short which should be excluded
+    :return: _TagInfo with the latest SemVer tag name
+    """
+    last_semver_tag = None
+    semver_regex = semver._REGEX  # pylint: disable=protected-access
+    for tag in tags:
+        match = semver_regex.match(tag.short)
+        if match and tag.short != excluded_short:
+            if ((not last_semver_tag) or
+                    (semver.compare(tag.short, last_semver_tag.short) == 1)):
+                last_semver_tag = tag
+    return last_semver_tag
+
+
+def check_changelog(changelog_file, repo_path, last_semver_tag, tags, logger):
+    """
+    Function check fact of changing into changelog file
+    since previous release tag
+    :param changelog_file : path to changelog file
+    :param repo_path: path to dir with git repo
+    :param last_semver_tag: release tag
+    :param tags: list of _TagInfo object for git repo
+    """
+    logger.debug("Checking changelog changes into file %s" % changelog_file)
+    previous_release_tag = _seek_last_semver_tag(
+        tags, excluded_short=last_semver_tag.short)
+    repo = _get_repo(repo_path)
+    diff = repo.git.diff(
+        previous_release_tag.commit,
+        last_semver_tag.commit,
+        changelog_file)
+    if not diff:
+        raise BuildFailedException(
+            "Not found changes between previous tag %s and current tag %s"
+            " into configured changelog file %s"
+            % (previous_release_tag.name, last_semver_tag.name,
+               changelog_file))
 
 
 @before("prepare", only_once=True)
 def version_from_git_tag(project, logger):
     """ Set project version according git tags"""
     # get git info
-    tags, last_commit, repo_is_dirty = _get_repo_info(
-        project.get_property('semver_git_tag_repo_dir')
-        if project.get_property('semver_git_tag_repo_dir')
-        else project.basedir)
-    # get last tag which satisfies SemVer
-    last_semver_tag = None
-    semver_regex = semver._REGEX    # pylint: disable=protected-access
+    version_prefix = project.get_property('semver_git_tag_version_prefix')
+    repo_path = (project.get_property('semver_git_tag_repo_dir')
+                 if project.get_property('semver_git_tag_repo_dir')
+                 else project.basedir)
+    tags, last_commit, repo_is_dirty = _get_repo_info(repo_path, version_prefix)
     tag_list = []
-    for tag in reversed(tags):
+    for tag in tags:
         tag_list.append(tag.name)
     logger.debug("All git tags: %s." % ','.join(tag_list))
-    for tag in reversed(tags):
-        match = semver_regex.match(tag.name)
-        if match:
-            if ((not last_semver_tag) or
-                    (semver.compare(tag.name, last_semver_tag.name) == 1)):
-                last_semver_tag = tag
+    # get last tag which satisfies SemVer
+    last_semver_tag = _seek_last_semver_tag(tags)
     if not last_semver_tag:
         logger.warn(
             "No SemVer git tag found. "
@@ -130,6 +189,9 @@ def version_from_git_tag(project, logger):
     # - it's release tag
     else:
         project.version = last_semver_tag.name
+        if project.get_property('semver_git_tag_changelog'):
+            check_changelog(project.expand_path('$semver_git_tag_changelog'),
+                            repo_path, last_semver_tag, tags, logger)
     # DISTRIBUTION_PROPERTY is also be affected
     project.set_property(DISTRIBUTION_PROPERTY,
                          "$dir_target/dist/{0}-{1}".format(

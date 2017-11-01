@@ -17,6 +17,11 @@ Plugin seek last tag which satisfies SemVer.
 * If current repo is dirty (has uncommitted changes) or tag commit isn't equal last commit - the plugin increment version with specified part (major, minor or patch) and add `.dev` suffix.
 * If current repo isn't dirty and tag commit is equal last commit - we're on release tag and the plugin copy version from tag.
 
+Changelog changes
+------
+Additional feature of plugin - check for release tag that changelog file was
+changes since previous release tag.
+
 How to use
 ----------
 
@@ -34,3 +39,5 @@ Plugin has next properties with provided defaults
 | --- | --- | --- | --- |
 | semver_git_tag_increment_part | string | patch | Part for develop version increment - `major`, `minor` or `patch` (SemVer version: `major.minor.patch`) |
 | semver_git_tag_repo_dir | string | None | Git repository directory full path. If `None` directory with` build.py` file will be used |
+| semver_git_tag_changelog | string | None | Relative path with name of changelog file. If not `None` for release tag plugin will check that changelog was changed since previous tag release |
+| semver_git_tag_version_prefix | string | '' | Specific prefix of release tags. For example, `v` for `v1.2.3` tag |

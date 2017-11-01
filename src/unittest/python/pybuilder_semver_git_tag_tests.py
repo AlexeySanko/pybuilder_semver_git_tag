@@ -17,7 +17,7 @@
 Tests for pybuilder_semver_git_tag module
 
 """
-
+from random import shuffle
 from unittest import TestCase
 
 from mock import Mock, patch
@@ -28,6 +28,7 @@ from pybuilder_semver_git_tag import (
     _add_dev,
     _TagInfo,
     initialize_semver_git_tag,
+    _seek_last_semver_tag,
     version_from_git_tag
 )
 
@@ -42,16 +43,92 @@ class SemVerGitPluginInitializationTests(TestCase):
         initialize_semver_git_tag(self.project)
         self.assertEquals(
             self.project.get_property('semver_git_tag_increment_part'), 'patch')
+        self.assertEquals(
+            self.project.get_property('semver_git_tag_version_prefix'), '')
 
     def test_should_leave_user_specified_properties(self):  # pylint: disable=invalid-name
         """ We need to keep user-defined properties"""
         self.project.set_property('semver_git_tag_increment_part', 'minor')
         self.project.set_property('semver_git_tag_repo_dir', '/some/dir')
+        self.project.set_property('semver_git_tag_changelog',
+                                  'dir/CHANGELOG.md')
+        self.project.set_property('semver_git_tag_version_prefix', 'v')
         initialize_semver_git_tag(self.project)
         self.assertEquals(
             self.project.get_property('semver_git_tag_increment_part'), 'minor')
         self.assertEquals(
             self.project.get_property('semver_git_tag_repo_dir'), '/some/dir')
+        self.assertEquals(
+            self.project.get_property('semver_git_tag_changelog'),
+            'dir/CHANGELOG.md')
+        self.assertEquals(
+            self.project.get_property('semver_git_tag_version_prefix'), 'v')
+
+
+class SeekLastTagTests(TestCase):
+    """ Test function _seek_last_semver_tag"""
+    def test_basic_seek(self):
+        """ Test result for basic versions"""
+        tags = []
+        for i in range(15):
+            tags.append(_TagInfo(
+                '1.0.' + str(i),
+                'commit' + str(i),
+                ''))
+        for i in range(15):
+            shuffle(tags)
+            self.assertEqual(_seek_last_semver_tag(tags).name, '1.0.14')
+            self.assertEqual(_seek_last_semver_tag(tags, '1.0.14').name,
+                             '1.0.13')
+
+    def test_none_return(self):
+        """ Test than function returns None if not SemVer found"""
+        tags = []
+        for i in range(15):
+            tags.append(_TagInfo('v1.0.' + str(i), 'commit' + str(i), ''))
+        for i in range(15):
+            shuffle(tags)
+            self.assertEqual(_seek_last_semver_tag(tags), None)
+
+    def test_none_return_if_all_excluded(self):     # pylint: disable=invalid-name
+        """ Test than function returns None if excluded one SemVer tag"""
+        tags = [_TagInfo('1.0.1', 'commit1', ''),
+                _TagInfo('notsemver', 'commit2', '')]
+        self.assertEqual(_seek_last_semver_tag(tags, '1.0.1'), None)
+
+    def test_basic_version_seek(self):
+        """ Test result for basic versions with prefix"""
+        version_prefix = 'v'
+        tags = []
+        for i in range(15):
+            tags.append(_TagInfo('%s1.0.%s' % (version_prefix, i),
+                                 'commit%s' % i,
+                                 version_prefix))
+        for i in range(15):
+            shuffle(tags)
+            self.assertEqual(_seek_last_semver_tag(tags).name, 'v1.0.14')
+            self.assertEqual(_seek_last_semver_tag(tags, '1.0.14').name,
+                             'v1.0.13')
+
+    def test_none_version_return(self):
+        """ Test than function returns None if not SemVer found with prefix"""
+        version_prefix = 'v'
+        tags = []
+        for i in range(15):
+            tags.append(_TagInfo('1.0.' + str(i),
+                                 'commit' + str(i),
+                                 version_prefix))
+        for i in range(15):
+            shuffle(tags)
+            self.assertEqual(_seek_last_semver_tag(tags, version_prefix), None)
+
+    def test_none_version_return_if_all_excluded(self):     # pylint: disable=invalid-name
+        """ Test than function returns None if excluded one SemVer tag"""
+        version_prefix = 'v'
+        tags = [_TagInfo('v1.0.1', 'commit1', version_prefix),
+                _TagInfo('notsemver', 'commit2', version_prefix),
+                _TagInfo('v1.0.v2', 'commit2', version_prefix)]
+        self.assertEqual(_seek_last_semver_tag(tags, '1.0.1'), None)
 
 
 class VersionFromGitTests(TestCase):
@@ -69,8 +146,8 @@ class VersionFromGitTests(TestCase):
                           self.project, Mock())
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
-           return_value=([_TagInfo('not_semver2', 'commit2'),
-                          _TagInfo('not_semver1', 'commit1')],
+           return_value=([_TagInfo('not_semver2', 'commit2', ''),
+                          _TagInfo('not_semver1', 'commit1', '')],
                          'last_commit', False))
     def test_should_warning_if_semver_tag_not_found(self, mock_git_info):   # pylint: disable=invalid-name, unused-argument
         """ Plugin should warning if SemVer tag wasn't found and return"""
@@ -80,8 +157,8 @@ class VersionFromGitTests(TestCase):
         logger_mock.info.assert_not_called()
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
-           return_value=([_TagInfo('1.2.3', 'last_commit'),
-                          _TagInfo('not_semver1', 'commit1')],
+           return_value=([_TagInfo('1.2.3', 'last_commit', ''),
+                          _TagInfo('not_semver1', 'commit1', '')],
                          'last_commit', False))
     def test_release_version_found(self, mock_git_info):    # pylint: disable=invalid-name, unused-argument
         """ Plugin should find release version"""
@@ -101,8 +178,8 @@ class VersionFromGitTests(TestCase):
         self.assertEqual(logger_mock.info.call_count, 2)
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
-           return_value=([_TagInfo('1.2.3', 'last_commit'),
-                          _TagInfo('not_semver1', 'commit1')],
+           return_value=([_TagInfo('1.2.3', 'last_commit', ''),
+                          _TagInfo('not_semver1', 'commit1', '')],
                          'last_commit', True))
     def test_dev_version_if_dirty(self, mock_git_info):     # pylint: disable=invalid-name, unused-argument
         """ Plugin should generate dev version if repo is dirty"""
@@ -123,8 +200,8 @@ class VersionFromGitTests(TestCase):
         logger_mock.info.assert_called_once()
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
-           return_value=([_TagInfo('1.2.3', 'commit2'),
-                          _TagInfo('not_semver1', 'commit1')],
+           return_value=([_TagInfo('1.2.3', 'commit2', ''),
+                          _TagInfo('not_semver1', 'commit1', '')],
                          'last_commit', False))
     def test_dev_version_if_tagged_not_last_commit(self, mock_git_info):    # pylint: disable=invalid-name, unused-argument
         """ Plugin should generate dev version
