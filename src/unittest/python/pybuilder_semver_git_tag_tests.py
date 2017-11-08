@@ -142,8 +142,11 @@ class VersionFromGitTests(TestCase):
 
     def test_should_raise_if_git_repo_not_exists(self):     # pylint: disable=invalid-name
         """ Plugin should raise exception if cannot find git root directory"""
-        self.assertRaises(BuildFailedException, version_from_git_tag,
-                          self.project, Mock())
+        with self.assertRaises(BuildFailedException) as context:
+            version_from_git_tag(self.project, Mock())
+        err_msg = str(context.exception)
+        self.assertTrue(
+            "Directory `basedir` isn't git repository root." in err_msg)
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
            return_value=([_TagInfo('not_semver2', 'commit2', ''),
@@ -195,8 +198,13 @@ class VersionFromGitTests(TestCase):
         # Test incorrect part
         logger_mock = Mock()
         self.project.set_property('semver_git_tag_increment_part', 'incorrect')
-        self.assertRaises(BuildFailedException, version_from_git_tag,
-                          self.project, logger_mock)
+        with self.assertRaises(BuildFailedException) as context:
+            version_from_git_tag(self.project, logger_mock)
+        err_msg = str(context.exception)
+        self.assertTrue(
+            ("Incorrect value for `semver_git_tag_increment_part` property. "
+             "Has to be in (`major`, `minor`, `patch`), "
+             "but `incorrect` passed.") in err_msg)
         logger_mock.info.assert_called_once()
 
     @patch("pybuilder_semver_git_tag._get_repo_info",

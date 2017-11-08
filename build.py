@@ -13,7 +13,9 @@ use_plugin("python.pylint")
 use_plugin("python.coverage")
 use_plugin("python.distutils")
 use_plugin("python.unittest")
-use_plugin("pypi:pybuilder_pylint_extended")
+use_plugin("filter_resources")
+# third party plugins
+use_plugin('pypi:pybuilder_pylint_extended')
 
 
 name = "pybuilder_semver_git_tag"
