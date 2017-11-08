@@ -29,6 +29,15 @@ default_task = ['clean', 'analyze', 'publish']
 
 
 @init
+def filter_settings(project):
+    # filter target files
+    project.set_property('filter_resources_target', '$dir_dist')
+    # provide verions and other properties
+    project.get_property("filter_resources_glob").append(
+        "%s/version.py" % name)
+
+
+@init
 def set_properties(project, logger):
     # dependencies
     project.build_depends_on('mock')
