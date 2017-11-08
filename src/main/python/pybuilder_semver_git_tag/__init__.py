@@ -23,11 +23,11 @@ from pybuilder.plugins.python.core_plugin import DISTRIBUTION_PROPERTY
 from pybuilder.errors import BuildFailedException
 import semver
 
-from pybuilder_semver_git_tag.version import __version__
+from pybuilder_semver_git_tag import version
 
 
 __author__ = 'Alexey Sanko'
-__version__ = __version__
+__version__ = version.__version__
 
 use_plugin("python.core")
 
