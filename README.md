@@ -30,6 +30,14 @@ Add plugin dependency to your `build.py`
 use_plugin('pypi:pybuilder_semver_git_tag')
 ```
 
+Project properties should be passed from command line:
+```
+pyb clean analyze publish -P semver_git_tag_increment_part=minor
+```
+Or within initializers, but in this case some version-related properties could 
+be spoiled. Also output will have default `1.0.dev0` version before `prepare` 
+task what could bring confusion. So command line usage is preferred way.
+
 Properties
 ----------
 

@@ -17,10 +17,13 @@
 """
     Plugin which provides dynamic project version based on SemVer git tag
 """
+import sys
+
 import git
 from pybuilder.core import before, init, use_plugin
 from pybuilder.plugins.python.core_plugin import DISTRIBUTION_PROPERTY
 from pybuilder.errors import BuildFailedException
+from pybuilder.reactor import Reactor
 import semver
 
 from pybuilder_semver_git_tag import version
@@ -32,26 +35,16 @@ __version__ = version.__version__
 use_plugin("python.core")
 
 
-@init
-def initialize_semver_git_tag(project):
-    """ Init default plugin project properties. """
-    project.plugin_depends_on('GitPython')
-    project.plugin_depends_on('semver')
-    # Part for develop increment - 'major', 'minor' or 'patch'
-    project.set_property_if_unset('semver_git_tag_increment_part', 'patch')
-    # Git repository directory path.
-    # If None parent directory for build.py will be used
-    project.set_property_if_unset('semver_git_tag_repo_dir', None)
-    # Relative path with name of changelog file.
-    # If not None for release tag plugin will check
-    # that changelog was changed since previous tag release
-    project.set_property_if_unset('semver_git_tag_changelog', None)
-    # Specific prefix of release tags. For example, 'v' for 'v1.2.3' tag
-    project.set_property_if_unset('semver_git_tag_version_prefix', '')
+DEFAULT_PROPERTIES = {
+    'semver_git_tag_increment_part': 'patch',
+    'semver_git_tag_repo_dir': None,
+    'semver_git_tag_version_prefix': ''
+}
+SAVED_PROP_SUFFIX = '_on_import_plugin'
 
 
-def _add_dev(version):
-    return version + '.dev'
+def _add_dev(project_version):
+    return project_version + '.dev'
 
 
 class _TagInfo(object):     # pylint: disable=too-few-public-methods
@@ -142,8 +135,7 @@ def check_changelog(changelog_file, repo_path, last_semver_tag, tags, logger):
                changelog_file))
 
 
-@before("prepare", only_once=True)
-def version_from_git_tag(project, logger):
+def set_version_from_git_tag(project, logger):
     """ Set project version according git tags"""
     # get git info
     version_prefix = project.get_property('semver_git_tag_version_prefix')
@@ -195,10 +187,71 @@ def version_from_git_tag(project, logger):
         if project.get_property('semver_git_tag_changelog'):
             check_changelog(project.expand_path('$semver_git_tag_changelog'),
                             repo_path, last_semver_tag, tags, logger)
-    # DISTRIBUTION_PROPERTY is also be affected
-    project.set_property(DISTRIBUTION_PROPERTY,
-                         "$dir_target/dist/{0}-{1}".format(
-                             project.name, project.version))
-    logger.info("Project version was changed to: %s, dist_version: %s, %s: %s"
-                % (project.version, project.dist_version, DISTRIBUTION_PROPERTY,
-                   project.get_property(DISTRIBUTION_PROPERTY)))
+    logger.info("Project version was set to: %s, dist_version: %s"
+                % (project.version, project.dist_version))
+
+
+def force_semver_git_tag_plugin(project, logger):
+    """ Force call SemVer git tag plugin on import stage"""
+    # workaround for command line properties
+    # until https://github.com/pybuilder/pybuilder/pull/515
+    # set default or from command line properties
+    for key, value in DEFAULT_PROPERTIES.iteritems():
+        project.set_property_if_unset(key, value)
+        for arg in sys.argv:
+            if str(arg).startswith(key + '='):
+                project.set_property(key, str(arg).replace(key + '=', ''))
+    set_version_from_git_tag(project, logger)
+    # save current properties
+    for key, value in DEFAULT_PROPERTIES.iteritems():
+        project.set_property_if_unset(key + SAVED_PROP_SUFFIX, value)
+
+
+# if we're in working project - update version according git tag
+if Reactor.current_instance():
+    force_semver_git_tag_plugin(
+        Reactor.current_instance().project, Reactor.current_instance().logger)
+
+
+@init
+def initialize_semver_git_tag(project):
+    """ Init default plugin project properties. """
+    project.plugin_depends_on('GitPython')
+    project.plugin_depends_on('semver')
+    # Part for develop increment - 'major', 'minor' or 'patch'
+    project.set_property_if_unset('semver_git_tag_increment_part', 'patch')
+    # Git repository directory path.
+    # If None parent directory for build.py will be used
+    project.set_property_if_unset('semver_git_tag_repo_dir', None)
+    # Relative path with name of changelog file.
+    # If not None for release tag plugin will check
+    # that changelog was changed since previous tag release
+    project.set_property_if_unset('semver_git_tag_changelog', None)
+    # Specific prefix of release tags. For example, 'v' for 'v1.2.3' tag
+    project.set_property_if_unset('semver_git_tag_version_prefix', '')
+
+
+@before("prepare", only_once=True)
+def update_version_from_git_tag(project, logger):
+    """ Update project version according git tags if any property was changed"""
+    # Compare properties saved on import stage with actual
+    are_properties_changed = False
+    for key in DEFAULT_PROPERTIES:
+        if (project.get_property(key + SAVED_PROP_SUFFIX) !=
+                project.get_property(key)):
+            logger.warn("Property `{prop}` was changed. "
+                        "For better compatibility recommended to use "
+                        "command line `pyb ... -P {prop}=...`, "
+                        "otherwise some version-related properties could "
+                        "be spoiled.".format(prop=key))
+            are_properties_changed = True
+    if are_properties_changed:
+        logger.info("Updating project version according git tag...")
+        set_version_from_git_tag(project, logger)
+        # DISTRIBUTION_PROPERTY is also be affected
+        project.set_property(DISTRIBUTION_PROPERTY,
+                             "$dir_target/dist/{0}-{1}".format(
+                                 project.name, project.version))
+        logger.info("Additional affected properties: %s: %s"
+                    % (DISTRIBUTION_PROPERTY,
+                       project.get_property(DISTRIBUTION_PROPERTY)))

@@ -1,5 +1,5 @@
 import sys
-from pybuilder.core import Author, before, use_plugin, init
+from pybuilder.core import Author, use_plugin, init
 
 # Eating your own dog food
 # This is only necessary for bootstrap
@@ -16,6 +16,10 @@ use_plugin("python.unittest")
 use_plugin("filter_resources")
 # third party plugins
 use_plugin('pypi:pybuilder_pylint_extended')
+
+
+# Eating your own dog food. Set version from git tag
+import pybuilder_semver_git_tag
 
 
 name = "pybuilder_semver_git_tag"
@@ -50,14 +54,13 @@ def set_properties(project, logger):
     # flake8
     project.set_property('flake8_verbose_output', True)
     project.set_property('flake8_break_build', True)
-    project.set_property('flake8_max_line_length', 80)
 
     # frosted
     project.set_property("frosted_break_build", True)
     project.set_property("frosted_include_test_sources", True)
 
-    # pylint
-    project.set_property("pylint_options", ["--max-line-length=80"])
+    # semver git tag
+    project.set_property('semver_git_tag_changelog', 'CHANGELOG.md')
 
     # distutils
     project.set_property('distutils_commands', ['bdist_wheel'])
@@ -75,12 +78,3 @@ def set_properties(project, logger):
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ])
-
-
-@before("prepare", only_once=True)
-def version_from_git_tag(project, logger):
-    # Eating your own dog food
-    import pybuilder_semver_git_tag
-    pybuilder_semver_git_tag.initialize_semver_git_tag(project)
-    project.set_property('semver_git_tag_changelog', 'CHANGELOG.md')
-    pybuilder_semver_git_tag.version_from_git_tag(project, logger)

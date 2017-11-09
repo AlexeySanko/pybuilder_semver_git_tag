@@ -29,7 +29,9 @@ from pybuilder_semver_git_tag import (
     _TagInfo,
     initialize_semver_git_tag,
     _seek_last_semver_tag,
-    version_from_git_tag
+    set_version_from_git_tag,
+    force_semver_git_tag_plugin,
+    update_version_from_git_tag
 )
 
 
@@ -135,6 +137,7 @@ class VersionFromGitTests(TestCase):
     """ Test plugin functionality    """
     def setUp(self):
         self.project = Project("basedir")
+        self.logger = Mock()
 
     def test__add_dev(self):
         """ Test _add_dev   """
@@ -143,7 +146,7 @@ class VersionFromGitTests(TestCase):
     def test_should_raise_if_git_repo_not_exists(self):     # pylint: disable=invalid-name
         """ Plugin should raise exception if cannot find git root directory"""
         with self.assertRaises(BuildFailedException) as context:
-            version_from_git_tag(self.project, Mock())
+            set_version_from_git_tag(self.project, self.logger)
         err_msg = str(context.exception)
         self.assertTrue(
             "Directory `basedir` isn't git repository root." in err_msg)
@@ -154,10 +157,11 @@ class VersionFromGitTests(TestCase):
                          'last_commit', False))
     def test_should_warning_if_semver_tag_not_found(self, mock_git_info):   # pylint: disable=invalid-name, unused-argument
         """ Plugin should warning if SemVer tag wasn't found and return"""
-        logger_mock = Mock()
-        version_from_git_tag(self.project, logger_mock)
-        logger_mock.warn.assert_called_once()
-        logger_mock.info.assert_not_called()
+        set_version_from_git_tag(self.project, self.logger)
+        self.logger.warn.assert_called_once_with(
+            "No SemVer git tag found. "
+            "Consider removing plugin pybuilder_semver_git_tag.")
+        self.logger.info.assert_not_called()
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
            return_value=([_TagInfo('1.2.3', 'last_commit', ''),
@@ -165,20 +169,17 @@ class VersionFromGitTests(TestCase):
                          'last_commit', False))
     def test_release_version_found(self, mock_git_info):    # pylint: disable=invalid-name, unused-argument
         """ Plugin should find release version"""
-        logger_mock = Mock()
-        version_from_git_tag(self.project, logger_mock)
-        self.assertEqual(logger_mock.info.call_count, 2)
+        set_version_from_git_tag(self.project, self.logger)
+        self.assertEqual(self.logger.info.call_count, 2)
         self.assertEqual(self.project.version, '1.2.3')
 
     def get_dev_version(self, increment_part):
-        """ Util method which call version_from_git_tag
+        """ Util method which call set_version_from_git_tag
             with particular level of version increment part
         """
-        logger_mock = Mock()
         self.project.set_property(
             'semver_git_tag_increment_part', increment_part)
-        version_from_git_tag(self.project, logger_mock)
-        self.assertEqual(logger_mock.info.call_count, 2)
+        set_version_from_git_tag(self.project, self.logger)
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
            return_value=([_TagInfo('1.2.3', 'last_commit', ''),
@@ -196,16 +197,14 @@ class VersionFromGitTests(TestCase):
         self.get_dev_version('major')
         self.assertEqual(self.project.version, '2.0.0.dev')
         # Test incorrect part
-        logger_mock = Mock()
         self.project.set_property('semver_git_tag_increment_part', 'incorrect')
         with self.assertRaises(BuildFailedException) as context:
-            version_from_git_tag(self.project, logger_mock)
+            set_version_from_git_tag(self.project, self.logger)
         err_msg = str(context.exception)
         self.assertTrue(
             ("Incorrect value for `semver_git_tag_increment_part` property. "
              "Has to be in (`major`, `minor`, `patch`), "
              "but `incorrect` passed.") in err_msg)
-        logger_mock.info.assert_called_once()
 
     @patch("pybuilder_semver_git_tag._get_repo_info",
            return_value=([_TagInfo('1.2.3', 'commit2', ''),
@@ -225,13 +224,34 @@ class VersionFromGitTests(TestCase):
         self.get_dev_version('major')
         self.assertEqual(self.project.version, '2.0.0.dev')
         # Test incorrect part
-        logger_mock = Mock()
         self.project.set_property('semver_git_tag_increment_part', 'incorrect')
         with self.assertRaises(BuildFailedException) as context:
-            version_from_git_tag(self.project, logger_mock)
+            set_version_from_git_tag(self.project, self.logger)
         err_msg = str(context.exception)
         self.assertTrue(
             ("Incorrect value for `semver_git_tag_increment_part` property. "
              "Has to be in (`major`, `minor`, `patch`), "
              "but `incorrect` passed.") in err_msg)
-        logger_mock.info.assert_called_once()
+
+
+class UpdateVersionTests(TestCase):
+    """ Test update_version_from_git_tag function"""
+    def setUp(self):
+        self.project = Project("basedir")
+        self.logger = Mock()
+
+    @patch("pybuilder_semver_git_tag.set_version_from_git_tag")
+    def test_force_and_update(self, set_version_from_git_tag_mock):
+        """ Test force set and update after that"""
+        force_semver_git_tag_plugin(self.project, self.logger)
+        self.project.set_property('semver_git_tag_increment_part', 'minor')
+        update_version_from_git_tag(self.project, self.logger)
+        self.assertEqual(set_version_from_git_tag_mock.call_count, 2)
+        self.assertEqual(self.logger.info.call_count, 2)
+        self.logger.warn.assert_called_once_with(
+            "Property `semver_git_tag_increment_part` was changed. "
+            "For better compatibility recommended to use "
+            "command line `pyb ... -P semver_git_tag_increment_part=...`, "
+            "otherwise some version-related properties could "
+            "be spoiled."
+        )
