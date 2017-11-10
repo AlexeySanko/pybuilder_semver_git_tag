@@ -9,7 +9,7 @@ python:
 - 'pypy'
 - 'pypy3'
 install:
-  - pip install pybuilder
+  - pip install pybuilder GitPython semver
   - pip install 'coverage~=4.4,<4.4.2'
   - pyb install_dependencies --verbose
 script:
