@@ -196,15 +196,16 @@ def force_semver_git_tag_plugin(project, logger):
     # workaround for command line properties
     # until https://github.com/pybuilder/pybuilder/pull/515
     # set default or from command line properties
-    for key, value in DEFAULT_PROPERTIES.iteritems():
-        project.set_property_if_unset(key, value)
+    for key in DEFAULT_PROPERTIES:
+        project.set_property_if_unset(key, DEFAULT_PROPERTIES[key])
         for arg in sys.argv:
             if str(arg).startswith(key + '='):
                 project.set_property(key, str(arg).replace(key + '=', ''))
     set_version_from_git_tag(project, logger)
     # save current properties
-    for key, value in DEFAULT_PROPERTIES.iteritems():
-        project.set_property_if_unset(key + SAVED_PROP_SUFFIX, value)
+    for key in DEFAULT_PROPERTIES:
+        project.set_property_if_unset(key + SAVED_PROP_SUFFIX,
+                                      project.get_property(key))
 
 
 # if we're in working project - update version according git tag
