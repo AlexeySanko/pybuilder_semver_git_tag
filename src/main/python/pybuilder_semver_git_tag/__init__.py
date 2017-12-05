@@ -19,7 +19,10 @@
 """
 from os import path
 import sys
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 import git
 from pybuilder.core import before, init, use_plugin
