@@ -210,7 +210,7 @@ class VersionFromGitTests(TestCase):
            return_value=([_TagInfo('1.2.3', 'commit2', ''),
                           _TagInfo('not_semver1', 'commit1', '')],
                          'last_commit', False))
-    def test_dev_version_if_tagged_not_last_commit(self, mock_git_info):    # pylint: disable=invalid-name, unused-argument
+    def test_dev_version_if_tagged_not_last_commit(self, mock_git_info):  # pylint: disable=invalid-name, unused-argument
         """ Plugin should generate dev version
             if repo had commit(s) after SemVer tagger commit
         """
@@ -241,7 +241,9 @@ class UpdateVersionTests(TestCase):
         self.logger = Mock()
 
     @patch("pybuilder_semver_git_tag.set_version_from_git_tag")
-    def test_force_and_update(self, set_version_from_git_tag_mock):
+    @patch("pybuilder_semver_git_tag._get_repo_name")
+    def test_force_and_update(self, _get_repo_name,  # pylint: disable=unused-argument
+                              set_version_from_git_tag_mock):
         """ Test force set and update after that"""
         force_semver_git_tag_plugin(self.project, self.logger)
         self.project.set_property('semver_git_tag_increment_part', 'minor')

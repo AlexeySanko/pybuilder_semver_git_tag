@@ -22,7 +22,6 @@ use_plugin('pypi:pybuilder_pylint_extended')
 import pybuilder_semver_git_tag
 
 
-name = "pybuilder_semver_git_tag"
 authors = [Author('Alexey Sanko', 'alexeycount@gmail.com')]
 url = 'https://github.com/AlexeySanko/pybuilder_semver_git_tag'
 description = 'Please visit {0} for more information!'.format(url)
@@ -38,7 +37,7 @@ def filter_settings(project):
     project.set_property('filter_resources_target', '$dir_dist')
     # provide verions and other properties
     project.get_property("filter_resources_glob").append(
-        "%s/version.py" % name)
+        "%s/version.py" % project.name)
 
 
 @init

@@ -17,7 +17,9 @@
 """
     Plugin which provides dynamic project version based on SemVer git tag
 """
+from os import path
 import sys
+from urlparse import urlparse
 
 import git
 from pybuilder.core import before, init, use_plugin
@@ -63,32 +65,45 @@ class _TagInfo(object):     # pylint: disable=too-few-public-methods
         return self.name
 
 
-def _get_repo(path):
+def _get_repo(repo_path):
     try:
-        repo = git.Repo(path)
+        repo = git.Repo(repo_path)
     except (git.InvalidGitRepositoryError, git.NoSuchPathError):
         raise BuildFailedException("Directory `%s` isn't git repository root."
-                                   % path)
+                                   % repo_path)
     return repo
 
 
-def _get_repo_info(path, version_prefix):
+def _get_repo_info(repo_path, version_prefix):
     """
     Collect information about Git repository
 
     Function include all communication with Git repository.
     That allow to cover basic functionality with tests.
 
-    :param path:
+    :param repo_path:
     :return: (list of TagInfo, last commit for head, is_dirty flag)
     """
-    repo = _get_repo(path)
+    repo = _get_repo(repo_path)
     result_tags = []
     for tag in repo.tags:
         result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
     return (result_tags,
             list(repo.iter_commits(repo.head, max_count=1))[0],
             repo.is_dirty())
+
+
+def _get_repo_name(repo_path):
+    """ Extract repo name from URL.
+        For example `pybuilder_semver_git_tag`
+        from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`"""
+    return (
+        path.splitext(
+            path.split(
+                urlparse(
+                    _get_repo(repo_path).remotes.origin.url).path)
+            [1])
+        [0])
 
 
 def _seek_last_semver_tag(tags, excluded_short=''):
@@ -135,13 +150,20 @@ def check_changelog(changelog_file, repo_path, last_semver_tag, tags, logger):
                changelog_file))
 
 
+def _get_repo_path(project):
+    """ If `semver_git_tag_repo_dir` set return value,
+        otherwise return project basedir"""
+    return (
+        project.get_property('semver_git_tag_repo_dir')
+        if project.get_property('semver_git_tag_repo_dir')
+        else project.basedir)
+
+
 def set_version_from_git_tag(project, logger):
     """ Set project version according git tags"""
     # get git info
     version_prefix = project.get_property('semver_git_tag_version_prefix')
-    repo_path = (project.get_property('semver_git_tag_repo_dir')
-                 if project.get_property('semver_git_tag_repo_dir')
-                 else project.basedir)
+    repo_path = _get_repo_path(project)
     tags, last_commit, repo_is_dirty = _get_repo_info(repo_path, version_prefix)
     tag_list = []
     for tag in tags:
@@ -201,6 +223,9 @@ def force_semver_git_tag_plugin(project, logger):
         for arg in sys.argv:
             if str(arg).startswith(key + '='):
                 project.set_property(key, str(arg).replace(key + '=', ''))
+    # set project.name
+    project.name = _get_repo_name(_get_repo_path(project))
+    # set project.version
     set_version_from_git_tag(project, logger)
     # save current properties
     for key in DEFAULT_PROPERTIES:

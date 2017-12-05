@@ -19,8 +19,9 @@ Plugin seek last tag which satisfies SemVer.
 
 Changelog changes
 ------
-Additional feature of plugin - check for release tag that changelog file was
-changes since previous release tag.
+Additional features of plugin:
+- check for release tag that changelog file was changes since previous release tag - `semver_git_tag_changelog`
+- take `project.name` from Git repository name.
 
 How to use
 ----------

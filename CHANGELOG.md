@@ -1,5 +1,9 @@
 PyBuilder SemVer Git Tag Plugin [![Build Status](https://travis-ci.org/AlexeySanko/pybuilder_semver_git_tag.svg?branch=master)](https://travis-ci.org/AlexeySanko/pybuilder_semver_git_tag)
 =======================
+1.2.0
+---
+- take `project.name` from repository name (value from `build.py` overwrites it)
+
 1.1.0
 ---
 - `coverage<4.4.2` - wait PyBuilder fix
