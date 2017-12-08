@@ -17,7 +17,7 @@ Plugin seek last tag which satisfies SemVer.
 * If current repo is dirty (has uncommitted changes) or tag commit isn't equal last commit - the plugin increment version with specified part (major, minor or patch) and add `.dev` suffix.
 * If current repo isn't dirty and tag commit is equal last commit - we're on release tag and the plugin copy version from tag.
 
-Changelog changes
+Changelog file changes and project name from Git repository name
 ------
 Additional features of plugin:
 - check for release tag that changelog file was changes since previous release tag - `semver_git_tag_changelog`
