@@ -20,8 +20,8 @@ Plugin seek last tag which satisfies SemVer.
 Changelog file changes and project name from Git repository name
 ------
 Additional features of plugin:
-- check for release tag that changelog file was changes since previous release tag - `semver_git_tag_changelog`
-- take `project.name` from Git repository name.
+- check for release tag that changelog file was changes since previous release tag - `semver_git_tag_changelog` property
+- take `project.name` from Git repository name (works automaticaly, project name could be replaced with `name=...` into `build.py`).
 
 How to use
 ----------
