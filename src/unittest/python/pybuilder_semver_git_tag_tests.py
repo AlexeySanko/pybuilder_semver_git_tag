@@ -31,7 +31,8 @@ from pybuilder_semver_git_tag import (
     _seek_last_semver_tag,
     set_version_from_git_tag,
     force_semver_git_tag_plugin,
-    update_version_from_git_tag
+    update_version_from_git_tag,
+    _get_repo_name
 )
 
 
@@ -257,3 +258,46 @@ class UpdateVersionTests(TestCase):
             "otherwise some version-related properties could "
             "be spoiled."
         )
+
+
+class _Remotes(object):
+    def __init__(self, name, url):
+        self.name = name
+        self.url = url
+
+
+class _Repo(object):     # pylint: disable=too-few-public-methods
+    def __init__(self, remotes_spec):
+        self.remotes = []
+        for remote in remotes_spec:
+            self.remotes.append(_Remotes(name=remote[0], url=remote[1]))
+
+
+class GetRepoNameTests(TestCase):
+    """ Test _get_repo_name function"""
+
+    def setUp(self):
+        self.project = Project("basedir")
+        self.logger = Mock()
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=(_Repo(remotes_spec=[
+               ('someremote',
+                'https://github.com/AlexeySanko/some_incorrect.git'),
+               ('origin',
+                'https://github.com/AlexeySanko/pybuilder_semver_git_tag.git'),
+               ('someotherremote',
+                'https://github.com/AlexeySanko/some_other_incorrect.git')
+           ])))
+    def test_get_name_from_origin(self, mock_get_repo):
+        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=(_Repo(remotes_spec=[
+               ('myremote',
+                'https://github.com/AlexeySanko/pybuilder_semver_git_tag.git'),
+               ('someotherremote',
+                'https://github.com/AlexeySanko/some_other_incorrect.git')
+           ])))
+    def test_get_name_from_any_remote(self, mock_get_repo):
+        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')

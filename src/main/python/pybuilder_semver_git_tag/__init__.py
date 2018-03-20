@@ -99,14 +99,16 @@ def _get_repo_info(repo_path, version_prefix):
 def _get_repo_name(repo_path):
     """ Extract repo name from URL.
         For example `pybuilder_semver_git_tag`
-        from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`"""
-    return (
-        path.splitext(
-            path.split(
-                urlparse(
-                    _get_repo(repo_path).remotes.origin.url).path)
-            [1])
-        [0])
+        from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`
+        Preferred is `origin` remotes. Otherwise will take first available"""
+    def get_name_from_git_url(url):
+        """ Extract penultimate element of GIT url"""
+        return path.splitext(path.split(urlparse(url).path)[1])[0]
+    remotes = _get_repo(repo_path).remotes
+    for remote in remotes:
+        if remote.name == 'origin':
+            return get_name_from_git_url(remote.url)
+    return get_name_from_git_url(remotes[0].url)
 
 
 def _seek_last_semver_tag(tags, excluded_short=''):
