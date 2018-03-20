@@ -43,9 +43,10 @@ use_plugin("python.core")
 DEFAULT_PROPERTIES = {
     'semver_git_tag_increment_part': 'patch',
     'semver_git_tag_repo_dir': None,
-    'semver_git_tag_version_prefix': ''
+    'semver_git_tag_version_prefix': '',
+    'semver_git_tag_changelog': None
 }
-SAVED_PROP_SUFFIX = '_on_import_plugin'
+SAVED_PROP_SUFFIX = '_on_import'
 
 
 def _add_dev(project_version):

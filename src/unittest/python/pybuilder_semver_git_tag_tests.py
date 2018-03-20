@@ -260,7 +260,7 @@ class UpdateVersionTests(TestCase):
         )
 
 
-class _Remotes(object):
+class _Remotes(object):  # pylint: disable=too-few-public-methods
     def __init__(self, name, url):
         self.name = name
         self.url = url
@@ -289,7 +289,9 @@ class GetRepoNameTests(TestCase):
                ('someotherremote',
                 'https://github.com/AlexeySanko/some_other_incorrect.git')
            ])))
-    def test_get_name_from_origin(self, mock_get_repo):
+    def test_get_name_from_origin(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly works with repositories with
+                    origin remote"""
         self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
 
     @patch("pybuilder_semver_git_tag._get_repo",
@@ -299,5 +301,7 @@ class GetRepoNameTests(TestCase):
                ('someotherremote',
                 'https://github.com/AlexeySanko/some_other_incorrect.git')
            ])))
-    def test_get_name_from_any_remote(self, mock_get_repo):
+    def test_get_name_from_any_remote(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly works with repositories without
+            origin remote"""
         self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
