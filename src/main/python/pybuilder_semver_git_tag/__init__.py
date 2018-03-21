@@ -43,9 +43,10 @@ use_plugin("python.core")
 DEFAULT_PROPERTIES = {
     'semver_git_tag_increment_part': 'patch',
     'semver_git_tag_repo_dir': None,
-    'semver_git_tag_version_prefix': ''
+    'semver_git_tag_version_prefix': '',
+    'semver_git_tag_changelog': None
 }
-SAVED_PROP_SUFFIX = '_on_import_plugin'
+SAVED_PROP_SUFFIX = '_on_import'
 
 
 def _add_dev(project_version):
@@ -88,25 +89,31 @@ def _get_repo_info(repo_path, version_prefix):
     :return: (list of TagInfo, last commit for head, is_dirty flag)
     """
     repo = _get_repo(repo_path)
+    branch_commits_hexsha = []
+    for comm in repo.iter_commits(repo.head):
+        branch_commits_hexsha.append(comm.hexsha)
     result_tags = []
     for tag in repo.tags:
-        result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
+        if tag.commit.hexsha in branch_commits_hexsha:
+            result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
     return (result_tags,
-            list(repo.iter_commits(repo.head, max_count=1))[0],
+            repo.head.commit,
             repo.is_dirty())
 
 
 def _get_repo_name(repo_path):
     """ Extract repo name from URL.
         For example `pybuilder_semver_git_tag`
-        from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`"""
-    return (
-        path.splitext(
-            path.split(
-                urlparse(
-                    _get_repo(repo_path).remotes.origin.url).path)
-            [1])
-        [0])
+        from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`
+        Preferred is `origin` remotes. Otherwise will take first available"""
+    def get_name_from_git_url(url):
+        """ Extract penultimate element of GIT url"""
+        return path.splitext(path.split(urlparse(url).path)[1])[0]
+    remotes = _get_repo(repo_path).remotes
+    for remote in remotes:
+        if remote.name == 'origin':
+            return get_name_from_git_url(remote.url)
+    return get_name_from_git_url(remotes[0].url)
 
 
 def _seek_last_semver_tag(tags, excluded_short=''):

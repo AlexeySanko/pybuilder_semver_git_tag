@@ -31,7 +31,9 @@ from pybuilder_semver_git_tag import (
     _seek_last_semver_tag,
     set_version_from_git_tag,
     force_semver_git_tag_plugin,
-    update_version_from_git_tag
+    update_version_from_git_tag,
+    _get_repo_name,
+    _get_repo_info
 )
 
 
@@ -257,3 +259,111 @@ class UpdateVersionTests(TestCase):
             "otherwise some version-related properties could "
             "be spoiled."
         )
+
+
+class _Remotes(object):  # pylint: disable=too-few-public-methods
+    def __init__(self, name, url):
+        self.name = name
+        self.url = url
+
+
+class _Commit(object):  # pylint: disable=too-few-public-methods
+    def __init__(self, hexsha):
+        self.hexsha = hexsha
+
+
+class _Tag(object):  # pylint: disable=too-few-public-methods
+    def __init__(self, name, commit):
+        self.name = name
+        self.commit = commit
+
+
+class _Head(object):  # pylint: disable=too-few-public-methods
+    def __init__(self, last_commit, prev_commits):
+        self.commit = last_commit
+        self.commits_list = prev_commits + [last_commit]
+
+
+class _Repo(object):     # pylint: disable=too-few-public-methods
+    def __init__(self, remotes=None, head=None, is_dirty=False, tags=None):
+        self.remotes = remotes if remotes else []
+        self.dirty = is_dirty
+        self.head = head
+        self.tags = tags if tags else []
+
+    def is_dirty(self):
+        """ Stub for is_dirty flag"""
+        return self.dirty
+
+    def iter_commits(self, rev=None):  # pylint: disable=no-self-use
+        """ Stub for iter_commits"""
+        return iter(rev.commits_list)
+
+
+class GetRepoNameTests(TestCase):
+    """ Test _get_repo_name function"""
+
+    def setUp(self):
+        self.project = Project("basedir")
+        self.logger = Mock()
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=(_Repo(remotes=[
+               _Remotes(
+                   'someremote',
+                   'https://github.com/AlexeySanko/some_incorrect.git'),
+               _Remotes(
+                   'origin',
+                   'https://github.com/AlexeySanko/pybuilder_semver_git_tag.git'),  # pylint: disable=line-too-long
+               _Remotes(
+                   'someotherremote',
+                   'https://github.com/AlexeySanko/some_other_incorrect.git')
+           ])))
+    def test_get_name_from_origin(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly works with repositories with
+                    origin remote"""
+        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=(_Repo(remotes=[
+               _Remotes(
+                   'myremote',
+                   'https://github.com/AlexeySanko/pybuilder_semver_git_tag.git'),  # pylint: disable=line-too-long
+               _Remotes(
+                   'someotherremote',
+                   'https://github.com/AlexeySanko/some_other_incorrect.git')
+           ])))
+    def test_get_name_from_any_remote(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly works with repositories without
+            origin remote"""
+        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
+
+
+class GetRepoInfoTests(TestCase):
+    """ Test _get_repo_info function"""
+
+    def setUp(self):
+        self.project = Project("basedir")
+        self.logger = Mock()
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=_Repo(
+               head=_Head(
+                   last_commit=_Commit("shaforlastcommit"),
+                   prev_commits=[_Commit("shaforfirstcommit"),
+                                 _Commit("shaforsecondcommit"),
+                                 _Commit("shaforthirdcommit")]),
+               tags=[_Tag('tag1', _Commit("shaforfirstcommit")),
+                     _Tag('tag4', _Commit("shaforlastcommit")),
+                     _Tag('tagotherbranch',
+                          _Commit("shaforcommitfromotherbranch"))],
+               is_dirty=True
+           ))
+    def test_get_info_for_active_branch(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly returns tags for active branch"""
+        tags, last_commit, repo_is_dirty = _get_repo_info('', None)
+        self.assertEqual(repo_is_dirty, True)
+        self.assertEqual(last_commit.hexsha, 'shaforlastcommit')
+        self.assertEqual(len(tags), 2)
+        for tag in tags:
+            self.assertTrue(tag.name in ['tag1', 'tag4'])
