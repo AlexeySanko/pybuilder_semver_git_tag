@@ -89,11 +89,15 @@ def _get_repo_info(repo_path, version_prefix):
     :return: (list of TagInfo, last commit for head, is_dirty flag)
     """
     repo = _get_repo(repo_path)
+    branch_commits_hexsha = []
+    for comm in repo.iter_commits(repo.head):
+        branch_commits_hexsha.append(comm.hexsha)
     result_tags = []
     for tag in repo.tags:
-        result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
+        if tag.commit.hexsha in branch_commits_hexsha:
+            result_tags.append(_TagInfo(tag.name, tag.commit, version_prefix))
     return (result_tags,
-            list(repo.iter_commits(repo.head, max_count=1))[0],
+            repo.head.commit,
             repo.is_dirty())
 
 
