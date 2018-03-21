@@ -1,5 +1,10 @@
 PyBuilder SemVer Git Tag Plugin [![Build Status](https://travis-ci.org/AlexeySanko/pybuilder_semver_git_tag.svg?branch=master)](https://travis-ci.org/AlexeySanko/pybuilder_semver_git_tag)
 =======================
+1.2.1
+---
+- plugin takes tags only for active branch instead of all
+- plugin takes project.name from any remote if `origin` isn't available  
+
 1.2.0
 ---
 - take `project.name` from repository name (value from `build.py` overwrites it)
