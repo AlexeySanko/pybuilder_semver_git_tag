@@ -322,7 +322,7 @@ class GetRepoNameTests(TestCase):
     def test_get_name_from_origin(self, mock_get_repo):  # pylint: disable=unused-argument
         """Check that function correctly works with repositories with
                     origin remote"""
-        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
+        self.assertEqual(_get_repo_name(self.project, ''), 'pybuilder_semver_git_tag')
 
     @patch("pybuilder_semver_git_tag._get_repo",
            return_value=(_Repo(remotes=[
@@ -336,7 +336,14 @@ class GetRepoNameTests(TestCase):
     def test_get_name_from_any_remote(self, mock_get_repo):  # pylint: disable=unused-argument
         """Check that function correctly works with repositories without
             origin remote"""
-        self.assertEqual(_get_repo_name(''), 'pybuilder_semver_git_tag')
+        self.assertEqual(_get_repo_name(self.project, ''), 'pybuilder_semver_git_tag')
+
+    @patch("pybuilder_semver_git_tag._get_repo",
+           return_value=(_Repo()))
+    def test_get_name_from_no_remotes(self, mock_get_repo):  # pylint: disable=unused-argument
+        """Check that function correctly works with repositories with
+                    origin remote"""
+        self.assertEqual(_get_repo_name(self.project, ''), 'basedir')
 
 
 class GetRepoInfoTests(TestCase):

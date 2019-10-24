@@ -25,6 +25,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 import git
+import os
 from pybuilder.core import before, init, use_plugin
 from pybuilder.plugins.python.core_plugin import DISTRIBUTION_PROPERTY
 from pybuilder.errors import BuildFailedException
@@ -101,7 +102,7 @@ def _get_repo_info(repo_path, version_prefix):
             repo.is_dirty())
 
 
-def _get_repo_name(repo_path):
+def _get_repo_name(project, repo_path):
     """ Extract repo name from URL.
         For example `pybuilder_semver_git_tag`
         from `https://github.com/AlexeySanko/pybuilder_semver_git_tag.git`
@@ -110,10 +111,14 @@ def _get_repo_name(repo_path):
         """ Extract penultimate element of GIT url"""
         return path.splitext(path.split(urlparse(url).path)[1])[0]
     remotes = _get_repo(repo_path).remotes
-    for remote in remotes:
-        if remote.name == 'origin':
-            return get_name_from_git_url(remote.url)
-    return get_name_from_git_url(remotes[0].url)
+    # if there are remotes use them, otherwise fall back to parent directory name
+    if remotes is not None and len(remotes) > 0:
+        for remote in remotes:
+            if remote.name == 'origin':
+                return get_name_from_git_url(remote.url)
+        return get_name_from_git_url(remotes[0].url)
+    else:
+        return os.path.basename(project.basedir)
 
 
 def _seek_last_semver_tag(tags, excluded_short=''):
@@ -234,7 +239,7 @@ def force_semver_git_tag_plugin(project, logger):
             if str(arg).startswith(key + '='):
                 project.set_property(key, str(arg).replace(key + '=', ''))
     # set project.name
-    project.name = _get_repo_name(_get_repo_path(project))
+    project.name = _get_repo_name(project, _get_repo_path(project))
     # set project.version
     set_version_from_git_tag(project, logger)
     # save current properties
